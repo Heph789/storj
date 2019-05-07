@@ -156,7 +156,7 @@ type ProjectOptions struct {
 func (u *Uplink) OpenProject(ctx context.Context, satelliteAddr string, apiKey APIKey, opts *ProjectOptions) (p *Project, err error) {
 	defer mon.Task()(&ctx)(&err)
 
-	metainfo, err := metainfo.NewClient(ctx, u.tc, satelliteAddr, apiKey.key)
+	metainfo, err := metainfo.NewClient(ctx, u.tc, satelliteAddr, apiKey.Serialize())
 	if err != nil {
 		return nil, err
 	}
