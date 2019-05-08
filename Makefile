@@ -124,7 +124,7 @@ test-all-in-one: ## Test docker images locally
 ##@ Build
 
 .PHONY: images
-images: satellite-image storagenode-image uplink-image gateway-image versioncontrol-image ## Build gateway, satellite, storagenode, uplink and versioncontrol Docker images
+images: satellite-image storagenode-image uplink-image gateway-image versioncontrol-image watchtower-image ## Build gateway, satellite, storagenode, uplink, versioncontrol, and watchtower  Docker images
 	echo Built version: ${TAG}
 
 .PHONY: gateway-image
@@ -162,6 +162,13 @@ versioncontrol-image: versioncontrol_linux_arm versioncontrol_linux_amd64 ## Bui
 	${DOCKER_BUILD} --pull=true -t storjlabs/versioncontrol:${TAG}${CUSTOMTAG}-arm32v6 \
 		--build-arg=GOARCH=arm --build-arg=DOCKER_ARCH=arm32v6 \
 		-f cmd/versioncontrol/Dockerfile .
+.PHONY: watchtower-image
+watchtower-image: watchtower_linux_arm watchtower_linux_amd64 ## Build watchtower Docker image
+	${DOCKER_BUILD} --pull=true -t storjlabs/watchtower:${TAG}${CUSTOMTAG}-amd64 \
+		-f cmd/watchtower/Dockerfile .
+	${DOCKER_BUILD} --pull=true -t storjlabs/watchtower:${TAG}${CUSTOMTAG}-arm32v6 \
+		--build-arg=GOARCH=arm --build-arg=DOCKER_ARCH=arm32v6 \
+		-f cmd/watchtower/Dockerfile .
 
 .PHONY: binary
 binary: CUSTOMTAG = -${GOOS}-${GOARCH}
@@ -216,8 +223,11 @@ inspector_%:
 .PHONY: versioncontrol_%
 versioncontrol_%:
 	GOOS=$(word 2, $(subst _, ,$@)) GOARCH=$(word 3, $(subst _, ,$@)) COMPONENT=versioncontrol $(MAKE) binary
+.PHONY: watchtower_%
+watchtower_%:
+	GOOS=$(word 2, $(subst _, ,$@)) GOARCH=$(word 3, $(subst _, ,$@)) COMPONENT=watchtower $(MAKE) binary
 
-COMPONENTLIST := gateway satellite storagenode uplink identity certificates inspector versioncontrol
+COMPONENTLIST := gateway satellite storagenode uplink identity certificates inspector versioncontrol watchtower
 OSARCHLIST    := darwin_amd64 linux_amd64 linux_arm windows_amd64
 BINARIES      := $(foreach C,$(COMPONENTLIST),$(foreach O,$(OSARCHLIST),$C_$O))
 .PHONY: binaries
@@ -236,7 +246,7 @@ deploy: ## Update Kubernetes deployments in staging (jenkins)
 push-images: ## Push Docker images to Docker Hub (jenkins)
 	# images have to be pushed before a manifest can be created
 	# satellite
-	for c in satellite storagenode uplink gateway versioncontrol; do \
+	for c in satellite storagenode uplink gateway versioncontrol watchtower; do \
 		docker push storjlabs/$$c:${TAG}${CUSTOMTAG}-amd64 \
 		&& docker push storjlabs/$$c:${TAG}${CUSTOMTAG}-arm32v6 \
 		&& for t in ${TAG}${CUSTOMTAG} ${LATEST_TAG}; do \
