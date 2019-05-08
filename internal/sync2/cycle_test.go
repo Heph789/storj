@@ -118,6 +118,7 @@ func TestCycle_StopCancelled(t *testing.T) {
 	cancel()
 
 	var group errgroup.Group
+	// TODO: if/v3-1706 for what's count needed.
 	var count int64
 	cycle.Start(ctx, &group, func(ctx context.Context) error {
 		atomic.AddInt64(&count, 1)
@@ -126,4 +127,14 @@ func TestCycle_StopCancelled(t *testing.T) {
 
 	cycle.Stop()
 	cycle.Stop()
+}
+
+func TestCycle_Close(t *testing.T) {
+	t.Parallel()
+
+	cycle := sync2.NewCycle(time.Second)
+	// TODO: if/v3-1706 hangs because Run isn't called so stopped channel never
+	// gets closed
+	cycle.Close()
+	cycle.Close()
 }

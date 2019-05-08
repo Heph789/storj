@@ -71,6 +71,8 @@ func (cycle *Cycle) Run(ctx context.Context, fn func(ctx context.Context) error)
 	cycle.initialize()
 	defer close(cycle.stopped)
 
+	// TODO:  WIP#if/v3-1706 it looks that ticker can leak because there are
+	// some cases where it isn't stopped.
 	currentInterval := cycle.interval
 	cycle.ticker = time.NewTicker(currentInterval)
 	if err := fn(ctx); err != nil {
@@ -131,6 +133,7 @@ func (cycle *Cycle) Run(ctx context.Context, fn func(ctx context.Context) error)
 func (cycle *Cycle) Close() {
 	cycle.Stop()
 	<-cycle.stopped
+	// TODO: WIP#if/v3-1706 check if this panics calling this method twice
 	close(cycle.control)
 }
 
@@ -176,6 +179,7 @@ func (cycle *Cycle) Trigger() {
 // If it's currently running it waits for the previous to complete and then runs.
 func (cycle *Cycle) TriggerWait() {
 	done := make(chan struct{})
+	// TODO: if/v3-1706 there is no need to cose the channel
 	defer close(done)
 
 	cycle.sendControl(cycleTrigger{done})
